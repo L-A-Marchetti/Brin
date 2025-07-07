@@ -113,6 +113,10 @@ typedef struct Brin
      * @brief Pointer to function to trim leading and trailing whitespace.
      */
     void (*trim) (struct Brin *b);
+    /**
+     * @brief Pointer to function to split the string using a separator into a NULL-terminated array of strings.
+     */
+    char **(*split) (struct Brin *b, const char *sep);
 #endif
 
 } Brin;
@@ -472,6 +476,77 @@ void brin_trim(Brin *b)
 }
 
 /**
+ * @brief Splits the string inside a Brin object into a NULL-terminated array of strings.
+ *
+ * This function takes a Brin pointer and a separator string, then splits the Brin's string
+ * by occurrences of the separator. It returns a dynamically allocated NULL-terminated array
+ * of strings, each string is separately allocated and must be freed by the caller.
+ *
+ * @param b Pointer to the Brin object containing the string to split.
+ * @param sep The separator string used to split the input string.
+ *
+ * @return A NULL-terminated array of dynamically allocated strings resulting from the split.
+ *
+ * @note The caller is responsible for freeing each string in the returned array,
+ *       as well as the array pointer itself.
+ * @note The function will exit with failure if input pointers are NULL or memory allocation fails.
+ */
+char **brin_split(Brin *b, const char *sep)
+{
+    if (!b || !b->string || !sep)
+    {
+        fprintf(stderr, "Error: one of the inputs is null\n");
+        exit(EXIT_FAILURE);
+    }
+
+    char *copy = strdup(b->string);
+    if (!copy)
+    {
+        fprintf(stderr, "Error: memory allocation failed\n");
+        exit(EXIT_FAILURE);
+    }
+
+    size_t count = 0;
+    char *temp = strdup(copy);
+    char *token = strtok(temp, sep);
+    while (token)
+    {
+        count++;
+        token = strtok(NULL, sep);
+    }
+    free(temp);
+
+    char **array = malloc((count + 1) * sizeof(char*));
+    if (!array)
+    {
+        free(copy);
+        fprintf(stderr, "Error: memory allocation failed\n");
+        exit(EXIT_FAILURE);
+    }
+
+    size_t i = 0;
+    token = strtok(copy, sep);
+    while (token)
+    {
+        array[i] = strdup(token);
+        if (!array[i])
+        {
+            for (size_t j = 0; j < i; j++) free(array[j]);
+            free(array);
+            free(copy);
+            fprintf(stderr, "Error: memory allocation failed\n");
+            exit(EXIT_FAILURE);
+        }
+        i++;
+        token = strtok(NULL, sep);
+    }
+    array[i] = NULL;
+
+    free(copy);
+    return array;
+}
+
+/**
  * @brief Frees the memory used by the string in the Brin instance and resets its state.
  *
  * This function releases the allocated memory for the string inside the given Brin object,
@@ -499,6 +574,7 @@ void brin_destroy(Brin *b)
     b->trim_start = NULL;
     b->trim_end = NULL;
     b->trim = NULL;
+    b->split = NULL;
 #endif
 }
 
@@ -544,7 +620,46 @@ Brin brin_new(const char *string)
     b.trim_start = brin_trim_start;
     b.trim_end = brin_trim_end;
     b.trim = brin_trim;
+    b.split = brin_split;
 #endif
+    return b;
+}
+
+/**
+ * @brief Joins an array of C strings into a single Brin, separated by `sep`.
+ *
+ * @param array  Array of C strings to join.
+ * @param length Number of elements in the array.
+ * @param sep    Separator string (can be empty, but not NULL).
+ * @return Brin  The joined string.
+ */
+Brin brin_join(const char **array, size_t length, const char *sep)
+{
+    if (!array)
+    {
+        fprintf(stderr, "Error: input array is NULL\n");
+        exit(EXIT_FAILURE);
+    }
+    if (!sep)
+    {
+        fprintf(stderr, "Error: separator is NULL\n");
+        exit(EXIT_FAILURE);
+    }
+    Brin b = brin_new("");
+    for (size_t i = 0; i < length; ++i)
+    {
+        if (!array[i])
+        {
+            fprintf(stderr, "Error: array[%zu] is NULL\n", i);
+            brin_destroy(&b);
+            exit(EXIT_FAILURE);
+        }
+        brin_concat(&b, array[i]);
+        if (i < length - 1)
+        {
+            brin_concat(&b, sep);
+        }
+    }
     return b;
 }
 
@@ -604,6 +719,21 @@ int main(void)
 
     printf("%s\n", msg.string);
 
+    const char *array[] = {"This", "is", "a", "join", "test."};
+
+    Brin join = brin_join(array, sizeof(array)/sizeof(array[0]), " ");
+    printf("%s\n", join.string);
+
+    char **split = join.split(&join, " ");
+    for (size_t i = 0; split[i] != NULL; i++)
+    {
+        printf("%lld: %s\n", i+1, split[i]);
+        free(split[i]);
+    }
+    free(split);
+
+    join.destroy(&join);
+
     msg.destroy(&msg);
 #else
     Brin txt = brin_new("");
@@ -657,6 +787,20 @@ int main(void)
     brin_insert(&msg, 7, " Mathias et");
 
     printf("%s\n", msg.string);
+
+    const char *array[] = {"This", "is", "a", "join", "test."};
+
+    Brin join = brin_join(array, sizeof(array)/sizeof(array[0]), " ");
+    printf("%s\n", join.string);
+
+    char **split = brin_split(&join, " ");
+    for (size_t i = 0; split[i] != NULL; i++)
+    {
+        printf("%lld: %s\n", i+1, split[i]);
+        free(split[i]);
+    }
+    free(split);
+    brin_destroy(&join);
 
     brin_destroy(&msg);
 #endif
