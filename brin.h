@@ -340,4 +340,22 @@ void brin_trim(Brin *b);
  */
 Brin brin_join(const char **array, size_t length, const char *sep);
 
+/**
+ * @brief Splits the string inside a Brin object into a NULL-terminated array of strings.
+ *
+ * This function takes a Brin pointer and a separator string, then splits the Brin's string
+ * by occurrences of the separator. It returns a dynamically allocated NULL-terminated array
+ * of strings, each string is separately allocated and must be freed by the caller.
+ *
+ * @param b Pointer to the Brin object containing the string to split.
+ * @param sep The separator string used to split the input string.
+ *
+ * @return A NULL-terminated array of dynamically allocated strings resulting from the split.
+ *
+ * @note The caller is responsible for freeing each string in the returned array,
+ *       as well as the array pointer itself.
+ * @note The function will exit with failure if input pointers are NULL or memory allocation fails.
+ */
+char **brin_split(Brin *b, const char *sep);
+
 #endif // BRIN_H

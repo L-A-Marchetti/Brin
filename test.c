@@ -1,3 +1,5 @@
+// #define BRIN_LITE
+
 #include <brin.h>
 
 #include <stdio.h>
@@ -136,7 +138,7 @@ int main(void)
     char **split = brin_split(&join, " ");
     for (size_t i = 0; split[i] != NULL; i++)
     {
-        printf("%lld: %s\n", i+1, split[i]);
+        printf("%ld: %s\n", i+1, split[i]);
         free(split[i]);
     }
     free(split);
