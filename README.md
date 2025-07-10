@@ -243,6 +243,30 @@ b.destroy(&b);
 
 ---
 
+### `b.remove(&b, start, end)` / `brin_remove(&b, start, end)`
+
+Removes a portion of the string between the `start` (inclusive) and `end` (exclusive) indices.
+
+```c
+Brin b = brin_new("Hello, cruel world!");
+b.remove(&b, 7, 13); // Removes "cruel "
+printf("%s\n", b.string); // Hello, world!
+```
+
+---
+
+### `b.replace(&b, to_replace, replace_by)` / `brin_replace(&b, to_replace, replace_by)`
+
+Replaces all occurrences of a substring with another string.
+
+```c
+Brin b = brin_new("the cat sat on the mat");
+b.replace(&b, "at", "og");
+printf("%s\n", b.string); // the cog sog on the mog
+```
+
+---
+
 ## Why Choose Brin?
 
 * **Minimal and focused:** Small codebase tailored for constrained environments.

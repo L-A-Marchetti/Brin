@@ -61,6 +61,14 @@ int main(void)
 
     printf("%s\n", msg.string);
 
+    msg.remove(&msg, 15, 24);
+
+    printf("after remove: %s\n", msg.string);
+
+    msg.replace(&msg, " ", " -> ");
+
+    printf("after replacing \" \" by \" -> \": %s\n", msg.string);
+
     const char *array[] = {"This", "is", "a", "join", "test."};
 
     Brin join = brin_join(array, sizeof(array)/sizeof(array[0]), " ");
@@ -129,6 +137,14 @@ int main(void)
     brin_insert(&msg, 7, " Mathias et");
 
     printf("%s\n", msg.string);
+
+    brin_remove(&msg, 15, 24);
+
+    printf("after remove: %s\n", msg.string);
+
+    brin_replace(&msg, " ", " -> ");
+
+    printf("after replacing \" \" by \" -> \": %s\n", msg.string);
 
     const char *array[] = {"This", "is", "a", "join", "test."};
 

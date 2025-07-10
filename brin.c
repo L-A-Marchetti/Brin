@@ -391,6 +391,88 @@ void brin_trim(Brin *b)
 }
 
 /**
+ * @brief Removes a portion of the string from a Brin object.
+ *
+ * This function removes the characters in the range [start, end) from the Brin's string.
+ * The operation is performed in-place: the string is modified and reallocated accordingly.
+ *
+ * @param b Pointer to the Brin object to modify.
+ * @param start The starting index (inclusive) of the portion to remove.
+ * @param end The ending index (exclusive) of the portion to remove.
+ *
+ * @note If the input is invalid (e.g., NULL pointer, invalid indices), the function
+ *       prints an error message to stderr and exits with failure.
+ * @note The function allocates a new string and frees the old one. The caller does not need to free anything manually.
+ */
+void brin_remove(Brin *b, int start, int end)
+{
+    if (!b || !b->string || start < 0 || end < start || end > (int)b->length)
+    {
+        fprintf(stderr, "Error: invalid input\n");
+        exit(EXIT_FAILURE);
+    }
+
+    int new_len = b->length - (end - start);
+    char *new_str = malloc(new_len + 1);
+    if (!new_str)
+        return;
+
+    memcpy(new_str, b->string, start);
+    memcpy(new_str + start, b->string + end, b->length - end);
+    new_str[new_len] = '\0';
+
+    free(b->string);
+
+    b->string = new_str;
+    b->length = new_len;
+}
+
+/**
+ * @brief Replaces all occurrences of a substring within a Brin string.
+ *
+ * Iterates through the Brin's string, finds each occurrence of `to_replace`,
+ * removes that segment, and inserts `replace_by` in its place. Continues until
+ * no more occurrences are found.
+ *
+ * @param b            Pointer to the Brin object to modify.
+ * @param to_replace   The substring to search for and replace.
+ * @param replace_by   The substring to insert in place of each found occurrence.
+ *
+ * @note Exits with failure if any input pointer is NULL or `to_replace` is empty.
+ * @note The function uses a temporary Brin to locate occurrences without
+ *       altering the original string prematurely.
+ */
+void brin_replace(Brin *b, const char *to_replace, const char *replace_by)
+{
+    if (!b || !to_replace || !replace_by || !*to_replace)
+    {
+        fprintf(stderr, "Error: invalid input\n");
+        exit(EXIT_FAILURE);
+    }
+
+    size_t len_old = strlen(to_replace);
+    size_t len_new = strlen(replace_by);
+    int offset = 0;
+
+    while (1)
+    {
+        Brin temp = brin_new(b->string + offset);
+        int local_index = temp.index_of(&temp, to_replace);
+        brin_destroy(&temp);
+
+        if (local_index == -1)
+            break;
+
+        int global_index = offset + local_index;
+
+        brin_remove(b, global_index, global_index + len_old);
+        brin_insert(b, global_index, replace_by);
+
+        offset = global_index + len_new;
+    }
+}
+
+/**
  * @brief Splits the string inside a Brin object into a NULL-terminated array of strings.
  *
  * This function takes a Brin pointer and a separator string, then splits the Brin's string
@@ -490,6 +572,8 @@ void brin_destroy(Brin *b)
     b->trim_end = NULL;
     b->trim = NULL;
     b->split = NULL;
+    b->remove = NULL;
+    b->replace = NULL;
 #endif
 }
 
@@ -536,6 +620,8 @@ Brin brin_new(const char *string)
     b.trim_end = brin_trim_end;
     b.trim = brin_trim;
     b.split = brin_split;
+    b.remove = brin_remove;
+    b.replace = brin_replace;
 #endif
     return b;
 }

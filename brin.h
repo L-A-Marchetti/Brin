@@ -117,6 +117,14 @@ typedef struct Brin
      * @brief Pointer to function to split the string using a separator into a NULL-terminated array of strings.
      */
     char **(*split) (struct Brin *b, const char *sep);
+    /**
+     * @brief Pointer to function to remove a portion of the string between two indices.
+     */
+    void (*remove) (struct Brin *b, int start, int end);
+    /**
+     * @brief Pointer to function to replace all occurrences of a substring with another.
+     */
+    void (*replace) (struct Brin *b, const char *to_replace, const char *replace_by);
 #endif
 
 } Brin;
@@ -357,5 +365,38 @@ Brin brin_join(const char **array, size_t length, const char *sep);
  * @note The function will exit with failure if input pointers are NULL or memory allocation fails.
  */
 char **brin_split(Brin *b, const char *sep);
+
+/**
+ * @brief Removes a portion of the string from a Brin object.
+ *
+ * This function removes the characters in the range [start, end) from the Brin's string.
+ * The operation is performed in-place: the string is modified and reallocated accordingly.
+ *
+ * @param b Pointer to the Brin object to modify.
+ * @param start The starting index (inclusive) of the portion to remove.
+ * @param end The ending index (exclusive) of the portion to remove.
+ *
+ * @note If the input is invalid (e.g., NULL pointer, invalid indices), the function
+ *       prints an error message to stderr and exits with failure.
+ * @note The function allocates a new string and frees the old one. The caller does not need to free anything manually.
+ */
+void brin_remove(Brin *b, int start, int end);
+
+/**
+ * @brief Replaces all occurrences of a substring within a Brin string.
+ *
+ * Iterates through the Brin's string, finds each occurrence of `to_replace`,
+ * removes that segment, and inserts `replace_by` in its place. Continues until
+ * no more occurrences are found.
+ *
+ * @param b            Pointer to the Brin object to modify.
+ * @param to_replace   The substring to search for and replace.
+ * @param replace_by   The substring to insert in place of each found occurrence.
+ *
+ * @note Exits with failure if any input pointer is NULL or `to_replace` is empty.
+ * @note The function uses a temporary Brin to locate occurrences without
+ *       altering the original string prematurely.
+ */
+void brin_replace(Brin *b, const char *to_replace, const char *replace_by);
 
 #endif // BRIN_H
